@@ -29,22 +29,23 @@ class LoginViewController: UIViewController {
         
         let email = emailTextField.text ?? ""
         let password = passwordTextField.text ?? ""
-        let alert = UIAlertController(title: "Error", message: "Please enter a valid username and password", preferredStyle: .alert)
-        
-//        guard let email = emailTextField.text, email != "",
-//            let password = passwordTextField.text, password != ""
-//            else {
-//                UIAlertController.showAlert(self, title: "Missing info", message:"Please fill out all fields")
-//                return
-//        }
-//
+
         Auth.auth().signIn(withEmail: email, password: password) { (user, error) in
-            if user != nil {
+
+            if user != nil && error == nil {
                 print("User is logged in!")
                 self.performSegue(withIdentifier: "loginSegue", sender: nil)
+                // save user id and then add to database
+                guard let user = user?.uid else {
+                    return
+                }
+                print(user)
             } else {
+                
                 print("User login failed.")
                 print("Error: \(error!.localizedDescription)")
+                
+                let alert = UIAlertController(title: "Error", message: "\(error!.localizedDescription)", preferredStyle: .alert)
                 let defaultAction = UIAlertAction(title: "Try again", style: .default, handler: nil)
                 alert.addAction(defaultAction)
                 self.present(alert, animated: true, completion: nil)

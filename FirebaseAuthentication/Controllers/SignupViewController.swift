@@ -33,20 +33,44 @@ class SignupViewController: UIViewController, UIImagePickerControllerDelegate, U
     
     @IBAction func onCreateAccountButton(_ sender: Any) {
         
-        let email = emailAddressLabel.text ?? ""
-        let password = passwordLabel.text ?? ""
-        let alert = UIAlertController(title: "Error", message: "This Username already exists" , preferredStyle: .alert)
+        let alert = UIAlertController(title: "Error", message: "This Username already exists", preferredStyle: .alert)
         
-        Auth.auth().createUser(withEmail: email, password: password, completion: { (user, error) in
-            if user != nil {
-                print("Created user!")
-                self.performSegue(withIdentifier: "createAndSigninSegue", sender: nil)
-            } else {
+        guard let email = emailAddressLabel.text, let password = passwordLabel.text, let firstName = firstNameLabel.text, let lastName = lastNameLabel.text else {
+            
+            print("Form is not valid")
+            let defaultAction = UIAlertAction(title: "Try again", style: .default, handler: nil)
+            alert.addAction(defaultAction)
+            self.present(alert, animated: true, completion: nil)
+            return
+        }
+        
+        Auth.auth().createUser(withEmail: email, password: password, completion: { (user: User?, error: Error?) in
+            
+            if error != nil {
                 print("Error: \(error!.localizedDescription)")
                 let defaultAction = UIAlertAction(title: "Try again", style: .default, handler: nil)
                 alert.addAction(defaultAction)
                 self.present(alert, animated: true, completion: nil)
+                return
             }
+            
+            guard let uid = user?.uid else {
+                return
+            }
+            
+            //successfully authenticated user
+            //user's info can now be stored in the Firebase database
+            let ref = Database.database().reference(fromURL: "https://tdcs-ios-app.firebaseio.com/")
+            let usersReference = ref.child("users").child(uid)
+            let values = ["firstName": firstName, "lastName": lastName, "email": email]
+            usersReference.updateChildValues(values, withCompletionBlock: { (err, ref) in
+                if err != nil {
+                    print(err!)
+                    return
+                }
+                print("Successfully created user and saved into Firebase database")
+                self.performSegue(withIdentifier: "createAndSigninSegue", sender: nil)
+            })
         })
     }
     
